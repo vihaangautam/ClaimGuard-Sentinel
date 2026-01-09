@@ -1,0 +1,17 @@
+==============================
+MODEL ACCURACY REPORT
+==============================
+Metrics on SCALED Data (0-1 range):
+  RMSE: 0.1487
+  MAE:  0.1172
+------------------------------
+Metrics on ORIGINAL Data (NDVI range):
+  RMSE: 0.1487
+  MAE:  0.1172
+  MAPE: 89523.53%
+------------------------------
+Interpretation:
+- On average, the prediction deviates by 0.1172 NDVI units.
+- Since NDVI ranges from -1 to 1 (usually 0 to 1 for vegetation),
+  an error of 0.1172 is considered Moderate.
+==============================

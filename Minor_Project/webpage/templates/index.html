@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drought Prediction & Farmer Support</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+        #result h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        #result p {
+            margin: 5px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Drought Prediction & Farmer Support</h1>
+        <form id="droughtForm">
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" required>
+
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" required>
+
+            <label for="location">Location (South India):</label>
+            <select id="location" required>
+                <option value="">Select Location</option>
+                <option value="Ramanathapuram">Ramanathapuram</option>
+                <option value="Sivaganga">Sivaganga</option>
+                <option value="Dharmapuri">Dharmapuri</option>
+                <option value="Koppal">Koppal</option>
+                <option value="Vijayapura">Vijayapura</option>
+                <option value="Raichur">Raichur</option>
+                <option value="Chitradurga">Chitradurga</option>
+                <option value="Anantapur">Anantapur</option>
+                <option value="Kadapa">Kadapa</option>
+                <option value="Kurnool">Kurnool</option>
+                <option value="Mahbubnagar">Mahbubnagar</option>
+                <option value="Palakkad">Palakkad</option>
+                <option value="Idukki">Idukki</option>
+            </select>
+
+            <button type="submit">Predict Drought</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('droughtForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const location = document.getElementById('location').value;
+            const resultDiv = document.getElementById('result');
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (start >= end) {
+                resultDiv.innerHTML = '<p style="color: red;">End date must be after start date.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_date: startDate, end_date: endDate, location: location })
+                });
+                const predictionResult = await response.json();
+
+                if (predictionResult.error) {
+                    resultDiv.innerHTML = `<p style="color: red;">${predictionResult.error}</p>`;
+                    return;
+                }
+
+                const prediction = predictionResult.prediction;
+                const confidence = predictionResult.confidence;
+                const ndvi = predictionResult.ndvi;
+
+                // Control measures
+                const controlMeasures = `
+                    <strong>Measures to Control Drought:</strong><br>
+                    - <strong>Water Conservation:</strong> Use drip irrigation to save water.<br>
+                    - <strong>Soil Management:</strong> Apply mulching to retain soil moisture.<br>
+                    - <strong>Reservoirs:</strong> Build small ponds to store rainwater.<br>
+                    - <strong>Cloud Seeding:</strong> Explore weather modification to induce rain (if feasible).<br>
+                    - <strong>Rotational Grazing:</strong> Reduce pressure on land by rotating livestock.
+                `;
+
+                // Farmer tips
+                let farmerTips = `
+                    <strong>Tips for Farmers:</strong><br>
+                    - <strong>Drought-Resistant Crops:</strong> Grow millets (e.g., finger millet, pearl millet) and sorghum, which need less water.<br>
+                    - <strong>Crop Rotation:</strong> Alternate with legumes like groundnuts to improve soil health.<br>
+                    - <strong>Irrigation Planning:</strong> Use soil moisture sensors to irrigate only when needed.<br>
+                    - <strong>Shade Nets:</strong> Protect crops from excessive heat using shade nets.<br>
+                    - <strong>Conservation Tillage:</strong> Reduce tilling to retain soil moisture.
+                `;
+
+                if (location === 'Ramanathapuram' || location === 'Sivaganga') {
+                    farmerTips += `<br>- <strong>Local Tip:</strong> Consider planting drought-tolerant rice varieties like Anna 4.`;
+                } else if (location === 'Koppal' || location === 'Vijayapura' || location === 'Chitradurga') {
+                    farmerTips += `<br>- <strong>Local Tip:</strong> Opt for ragi cultivation, a staple known for drought resistance.`;
+                } else if (location === 'Anantapur' || location === 'Kadapa' || location === 'Kurnool') {
+                    farmerTips += `<br>- <strong>Local Tip:</strong> Grow red gram, which is well-suited for dry conditions.`;
+                } else if (location === 'Palakkad' || location === 'Idukki') {
+                    farmerTips += `<br>- <strong>Local Tip:</strong> Focus on coconut intercropping with drought-tolerant spices like turmeric.`;
+                } else if (location === 'Raichur' || location === 'Mahbubnagar') {
+                    farmerTips += `<br>- <strong>Local Tip:</strong> Plant pigeon pea, which thrives in semi-arid conditions.`;
+                } else if (location === 'Dharmapuri') {
+                    farmerTips += `<br>- <strong>Local Tip:</strong> Grow sesame, which is drought-resistant and suits local soil.`;
+                }
+
+                resultDiv.innerHTML = `
+                    <h2>Prediction Result</h2>
+                    <p><strong>Location:</strong> ${location}</p>
+                    <p><strong>Date Range:</strong> ${start.toDateString()} to ${end.toDateString()}</p>
+                    <p><strong>Predicted NDVI:</strong> ${ndvi.toFixed(4)}</p>
+                    <p><strong>Prediction:</strong> ${prediction} (${confidence.toFixed(1)}% confidence)</p>
+                    <p>${controlMeasures}</p>
+                    <p>${farmerTips}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">Error during prediction: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
