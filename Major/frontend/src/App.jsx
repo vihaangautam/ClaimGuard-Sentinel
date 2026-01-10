@@ -5,6 +5,7 @@ import { StatsWidget } from "@/components/dashboard/StatsWidget"
 import { LiveAlerts } from "@/components/dashboard/LiveAlerts"
 import { InvestigationView } from "@/components/dashboard/InvestigationView"
 import { Sidebar } from "@/components/layout/Sidebar"
+import { Toaster, toast } from 'sonner'
 
 // Mock Claims Queue
 const CLAIM_QUEUE = [
@@ -23,10 +24,13 @@ function App() {
 
   // Navigation Logic
   const handleNextClaim = () => {
+    toast.success("Claim processed successfully")
     if (selectedClaimIndex < CLAIM_QUEUE.length - 1) {
       setSelectedClaimIndex(prev => prev + 1)
     } else {
-      window.alert("Queue Completed for Today!")
+      toast.success("Queue Completed for Today!", {
+        description: "All pending claims have been processed."
+      })
       setActivePage('dashboard')
       setSelectedClaimIndex(0)
     }
@@ -38,9 +42,11 @@ function App() {
     if (index !== -1) {
       setSelectedClaimIndex(index)
       setActivePage('investigation')
+      toast.info(`Viewing claims for ${district.name}`)
     } else {
       // Fallback if no specific claim mockup exists
       setActivePage('investigation')
+      toast.info(`Entered investigation mode for ${district.name}`)
     }
   }
 
@@ -48,6 +54,7 @@ function App() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">
+      <Toaster position="top-center" richColors />
       {/* Sidebar Navigation */}
       <Sidebar
         activePage={activePage}
