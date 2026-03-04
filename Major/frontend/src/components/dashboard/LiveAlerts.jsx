@@ -44,15 +44,17 @@ export function LiveAlerts({ alerts = [] }) {
                     if (alert.type === 'info') colorClass = "bg-blue-500/10 text-blue-500 border-blue-500/20";
 
                     return (
-                        <div key={alert.id} className={`flex flex-col gap-1 rounded-md border p-3 ${colorClass}`}>
-                            <div className="flex items-center gap-2">
-                                <Icon className="h-4 w-4" />
-                                <span className="font-bold text-sm">{alert.district}</span>
-                                {alert.ndvi != null && (
-                                    <span className="ml-auto text-xs font-mono opacity-70">NDVI {alert.ndvi.toFixed(2)}</span>
-                                )}
+                        <div key={alert.id} className={`flex items-center gap-2 rounded-md border px-3 py-2 ${colorClass}`}>
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-bold text-sm">{alert.district}</span>
+                                    {alert.ndvi != null && (
+                                        <span className="text-xs font-mono opacity-70">NDVI {alert.ndvi.toFixed(2)}</span>
+                                    )}
+                                </div>
+                                <p className="text-[11px] opacity-80">{alert.message}</p>
                             </div>
-                            <p className="text-xs opacity-90">{alert.message}</p>
                         </div>
                     );
                 })}

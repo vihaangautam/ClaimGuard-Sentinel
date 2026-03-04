@@ -119,11 +119,11 @@ function App() {
                 <RiskMap districts={districts} onSelectDistrict={handleDistrictSelect} />
               </div>
 
-              <div className="flex-1 flex flex-col gap-4 min-w-[350px]">
-                <div className="h-[30%]">
+              <div className="flex-1 flex flex-col gap-3 min-w-[350px]">
+                <div className="shrink-0">
                   <StatsWidget districts={districts} />
                 </div>
-                <div className="h-[70%] rounded-xl border border-border/50 bg-card shadow-lg overflow-hidden">
+                <div className="flex-1 rounded-xl border border-border/50 bg-card shadow-lg overflow-hidden min-h-0">
                   <LiveAlerts alerts={alerts} />
                 </div>
               </div>

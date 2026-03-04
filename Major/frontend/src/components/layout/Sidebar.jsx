@@ -8,7 +8,6 @@ export function Sidebar({ activePage, setActivePage, isCollapsed, setIsCollapsed
     { id: 'investigation', label: 'Investigation Queue', icon: FileSearch, count: claimCount || undefined },
     { id: 'forecast', label: 'Readiness Forecast', icon: Activity },
     { id: 'analytics', label: 'Cluster Analytics', icon: BarChart3 },
-    { id: 'team', label: 'Field Agents', icon: Users },
     { id: 'settings', label: 'System Settings', icon: Settings },
   ];
 

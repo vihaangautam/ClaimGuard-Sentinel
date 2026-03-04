@@ -148,29 +148,22 @@ def get_alerts():
     alerts = []
     alert_id = 1
     for d in DISTRICT_SUMMARY:
-        if d["ndvi"] < 0.2:
+        if d["ndvi"] < 0.3:
+            # Risk > 70% — matches map red zone
             alerts.append({
                 "id": alert_id,
                 "district": d["name"],
-                "message": f"Critical NDVI drop to {d['ndvi']:.2f} — severe drought conditions detected",
+                "message": f"NDVI at {d['ndvi']:.2f} — below drought threshold, severe risk",
                 "type": "danger",
                 "ndvi": d["ndvi"],
             })
             alert_id += 1
-        elif d["ndvi"] < 0.3:
+        elif d["ndvi"] < 0.5:
+            # Risk 50-70% — matches map amber zone
             alerts.append({
                 "id": alert_id,
                 "district": d["name"],
-                "message": f"NDVI at {d['ndvi']:.2f} — below drought threshold, moisture declining",
-                "type": "warning",
-                "ndvi": d["ndvi"],
-            })
-            alert_id += 1
-        elif d["smi"] < 0.3:
-            alerts.append({
-                "id": alert_id,
-                "district": d["name"],
-                "message": f"Soil moisture at {d['smi']:.2f} — irrigation recommended",
+                "message": f"NDVI at {d['ndvi']:.2f} — moderate drought warning, moisture declining",
                 "type": "warning",
                 "ndvi": d["ndvi"],
             })

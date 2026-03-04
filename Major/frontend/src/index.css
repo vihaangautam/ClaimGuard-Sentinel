@@ -105,3 +105,16 @@
       black 96%,
       transparent 100%);
 }
+
+/* ── Leaflet attribution bar — dark mode ────────────────────── */
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: rgba(148, 163, 184, 0.6) !important;
+  font-size: 9px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px 0 0 0 !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(148, 163, 184, 0.7) !important;
+}

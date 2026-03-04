@@ -32,23 +32,19 @@ export function StatsWidget({ districts = [] }) {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
             {top3.map((district) => (
                 <Card key={district.name} className={getCardStyle(district.risk)}>
-                    <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase">{district.name}</p>
-                                <p className="text-2xl font-bold font-mono mt-1">{district.ndvi?.toFixed(2)}</p>
-                            </div>
+                    <CardContent className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <p className="text-[10px] text-muted-foreground/80 uppercase tracking-wider font-semibold truncate">{district.name}</p>
                             {district.risk > 0.5 && (
-                                <div className={`h-2 w-2 rounded-full ${district.risk > 0.7 ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`} />
+                                <div className={`h-2 w-2 rounded-full shrink-0 ${district.risk > 0.7 ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`} />
                             )}
                         </div>
-                        <div className="mt-2 flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">NDVI</span>
-                            <span className={`${getRiskColor(district.risk)} font-bold`}>Risk: {(district.risk * 100).toFixed(0)}%</span>
-                        </div>
+                        <p className="text-[10px] text-muted-foreground/50 uppercase">NDVI</p>
+                        <p className="text-2xl font-bold font-mono">{district.ndvi?.toFixed(2)}</p>
+                        <p className={`text-xs font-bold mt-1 ${getRiskColor(district.risk)}`}>Risk: {(district.risk * 100).toFixed(0)}%</p>
                     </CardContent>
                 </Card>
             ))}
