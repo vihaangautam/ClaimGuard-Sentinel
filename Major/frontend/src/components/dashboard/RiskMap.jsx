@@ -1,71 +1,69 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card } from "@/components/ui/card";
 
-// Mock Data for Districts
-const districts = [
-    { id: 1, name: "Anantapur", lat: 14.6819, lng: 77.6006, risk: 0.78, ndvi: 0.15, status: "High Risk" },
-    { id: 2, name: "Chitradurga", lat: 14.2287, lng: 76.3986, risk: 0.42, ndvi: 0.52, status: "Safe" },
-    { id: 3, name: "Ballari", lat: 15.1394, lng: 76.9214, risk: 0.65, ndvi: 0.28, status: "Warning" },
-];
-
-export function RiskMap({ onSelectDistrict }) {
-    // Leaflet needs to be dynamically loaded in some SSR contexts, but standard Vite React is fine.
-
+export function RiskMap({ districts = [], onSelectDistrict }) {
     return (
         <Card className="h-full w-full overflow-hidden border-none bg-muted/5 relative">
             <div className="absolute top-4 left-4 z-[400] bg-background/90 p-2 rounded-md shadow-lg border">
                 <h3 className="font-bold text-sm">Risk Assessment Map</h3>
-                <p className="text-xs text-muted-foreground">3 Districts • Real-time Monitoring</p>
+                <p className="text-xs text-muted-foreground">{districts.length} Districts • Real-time Monitoring</p>
             </div>
 
             <MapContainer
-                center={[14.68, 77.00]}
-                zoom={8}
+                center={[13.5, 77.5]}
+                zoom={7}
                 scrollWheelZoom={false}
                 style={{ height: '100%', width: '100%', background: '#0f172a' }}
                 className="z-0"
             >
-                {/* Dark Mode Map Style */}
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
 
-                {districts.map((district) => {
+                {districts.map((district, i) => {
                     let color = "#10b981"; // Safe (Green)
                     if (district.risk > 0.5) color = "#f59e0b"; // Warning (Amber)
                     if (district.risk > 0.7) color = "#ef4444"; // Danger (Red)
 
+                    const radius = 12 + (district.risk * 15); // Bigger = higher risk
+
                     return (
                         <CircleMarker
-                            key={district.id}
+                            key={district.name || i}
                             center={[district.lat, district.lng]}
                             pathOptions={{
                                 color: color,
                                 fillColor: color,
-                                fillOpacity: 0.6,
+                                fillOpacity: 0.5,
                                 weight: 2
                             }}
-                            radius={20}
+                            radius={radius}
                             eventHandlers={{
                                 click: () => onSelectDistrict(district),
                             }}
                         >
-                            <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent={true} className="bg-transparent border-none text-white font-bold shadow-none">
-                                {district.status === "High Risk" && (
-                                    <span className="bg-red-900/80 text-red-200 px-2 py-1 rounded text-xs border border-red-500/50">
-                                        {district.risk * 100}%
-                                    </span>
-                                )}
-                                <div className="mt-1 text-center text-xs drop-shadow-md">{district.name}</div>
+                            <Tooltip direction="top" offset={[0, -15]} opacity={1} permanent={false} className="bg-transparent border-none text-white font-bold shadow-none">
+                                <span className={`px-2 py-1 rounded text-xs border ${district.risk > 0.7 ? 'bg-red-900/80 text-red-200 border-red-500/50' :
+                                        district.risk > 0.5 ? 'bg-amber-900/80 text-amber-200 border-amber-500/50' :
+                                            'bg-green-900/80 text-green-200 border-green-500/50'
+                                    }`}>
+                                    {district.name} — NDVI: {district.ndvi?.toFixed(2)}
+                                </span>
                             </Tooltip>
                             <Popup className="text-black">
-                                <div className="p-1">
-                                    <h4 className="font-bold">{district.name}</h4>
-                                    <p>Risk: {(district.risk * 100).toFixed(0)}%</p>
-                                    <p>NDVI: {district.ndvi}</p>
+                                <div className="p-1 min-w-[180px]">
+                                    <h4 className="font-bold text-base">{district.name}</h4>
+                                    <p className="text-xs text-gray-500 mb-2">{district.state}</p>
+                                    <div className="space-y-1 text-sm">
+                                        <p>Risk: <strong>{(district.risk * 100).toFixed(0)}%</strong></p>
+                                        <p>NDVI: <strong>{district.ndvi?.toFixed(4)}</strong></p>
+                                        <p>Soil Moisture: <strong>{district.smi?.toFixed(4)}</strong></p>
+                                        <p>Rainfall: <strong>{district.rainfall?.toFixed(4)}</strong></p>
+                                        <p className="text-xs mt-1 text-gray-400">Latest: {district.latest_date}</p>
+                                    </div>
                                 </div>
                             </Popup>
                         </CircleMarker>
