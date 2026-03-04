@@ -40,7 +40,68 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ── Premium Scrollbars ─────────────────────────────────────── */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(58, 74, 99, 0.4) transparent;
+}
+
+/* Reserve space so layout doesn't jump */
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto {
+  scrollbar-gutter: stable;
+}
+
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(58, 74, 99, 0.3);
+  border-radius: 10px;
+  transition: background 0.2s, width 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(78, 97, 128, 0.7);
+}
+
+/* Expand scrollbar on container hover */
+*:hover::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(58, 74, 99, 0.6);
+}
+
+/* Scroll fade masks — subtle top/bottom edge fade */
+.scroll-fade {
+  mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 4%,
+      black 96%,
+      transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom,
+      transparent 0%,
+      black 4%,
+      black 96%,
+      transparent 100%);
 }

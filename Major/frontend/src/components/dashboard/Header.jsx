@@ -16,6 +16,8 @@ export function Header({ simulatedDate, setSimulatedDate, apiStatus = true }) {
                 <input
                     type="date"
                     value={simulatedDate}
+                    min="2019-01-01"
+                    max="2026-12-31"
                     onChange={(e) => setSimulatedDate(e.target.value)}
                     className="bg-transparent text-sm font-mono font-bold focus:outline-none"
                 />

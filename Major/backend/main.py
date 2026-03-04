@@ -361,12 +361,114 @@ def predict_ndvi(req: PredictRequest):
 
 
 # ---------------------------------------------------------------------------
-# Startup event — preload model in background
+# Forecast cache — computed once at startup, not on every request
+# ---------------------------------------------------------------------------
+FORECAST_CACHE = []
+
+def _compute_forecast():
+    """
+    Run CNN-LSTM 3-month rollout for all districts.
+    Called once at startup; result cached in FORECAST_CACHE.
+    """
+    model = _load_model()
+    results = []
+
+    for loc in df["Location"].unique():
+        geo_data = df[df["Location"] == loc]
+        agg = geo_data.groupby("Date").agg({
+            "NDVI": "mean", "SMI": "mean", "Avg_rainfall": "mean",
+        }).reset_index().sort_values("Date")
+
+        features = agg[["NDVI", "SMI", "Avg_rainfall"]].values
+        scaler = MinMaxScaler()
+        scaled = scaler.fit_transform(features)
+
+        seq_length = 8
+        if len(scaled) < seq_length:
+            continue
+
+        current_ndvi = float(agg["NDVI"].iloc[-1])
+        current_smi = float(agg["SMI"].iloc[-1])
+        current_rain = float(agg["Avg_rainfall"].iloc[-1])
+        latest_date = agg["Date"].max()
+
+        # Predict next 3 months iteratively
+        buffer = list(scaled[-seq_length:])
+        predictions = []
+
+        for month_offset in range(1, 4):
+            input_seq = np.array(buffer[-seq_length:]).reshape(1, seq_length, 3)
+
+            if model is not None:
+                pred_scaled = float(model.predict(input_seq, verbose=0)[0, 0])
+            else:
+                pred_scaled = float(buffer[-1][0])
+
+            pred_scaled = max(0, min(1, pred_scaled))
+
+            dummy = np.zeros((1, 3))
+            dummy[0, 0] = pred_scaled
+            dummy[0, 1] = float(buffer[-1][1])
+            dummy[0, 2] = float(buffer[-1][2])
+            inv = scaler.inverse_transform(dummy)[0]
+            pred_ndvi = max(0, min(1, float(inv[0])))
+
+            pred_date = (latest_date + pd.DateOffset(months=month_offset)).strftime("%Y-%m")
+
+            predictions.append({
+                "month": pred_date,
+                "ndvi": round(pred_ndvi, 4),
+                "risk": round(max(0.0, min(1.0, 1.0 - pred_ndvi)), 4),
+                "level": "HIGH" if pred_ndvi < 0.3 else "MODERATE" if pred_ndvi < 0.5 else "LOW",
+            })
+
+            buffer.append([pred_scaled, float(buffer[-1][1]), float(buffer[-1][2])])
+
+        avg_pred_ndvi = np.mean([p["ndvi"] for p in predictions])
+        if avg_pred_ndvi < current_ndvi - 0.05:
+            trend = "WORSENING"
+        elif avg_pred_ndvi > current_ndvi + 0.05:
+            trend = "IMPROVING"
+        else:
+            trend = "STABLE"
+
+        coords = DISTRICT_COORDS.get(loc, {"lat": 14.0, "lng": 77.0, "state": "Unknown"})
+
+        results.append({
+            "name": loc,
+            "state": coords["state"],
+            "lat": coords["lat"],
+            "lng": coords["lng"],
+            "current_ndvi": round(current_ndvi, 4),
+            "current_smi": round(current_smi, 4),
+            "current_rainfall": round(current_rain, 4),
+            "current_risk": round(max(0.0, min(1.0, 1.0 - current_ndvi)), 4),
+            "predictions": predictions,
+            "trend": trend,
+            "latest_date": latest_date.strftime("%Y-%m-%d"),
+        })
+
+    results.sort(key=lambda r: np.mean([p["risk"] for p in r["predictions"]]), reverse=True)
+    return results
+
+
+@app.get("/api/forecast")
+def get_forecast():
+    """Return cached 3-month forecast (computed at startup, not per-request)."""
+    return FORECAST_CACHE
+
+
+# ---------------------------------------------------------------------------
+# Startup event — preload model + compute forecast cache
 # ---------------------------------------------------------------------------
 @app.on_event("startup")
 async def startup():
+    global FORECAST_CACHE
     print("🚀 ClaimGuard Sentinel API starting...")
     print(f"📊 Loaded {len(df)} data records across {df['Location'].nunique()} districts")
     print(f"📈 Date range: {df['Date'].min().strftime('%Y-%m-%d')} to {df['Date'].max().strftime('%Y-%m-%d')}")
-    # Load model eagerly
     _load_model()
+    print("🔮 Computing 3-month forecast for all districts...")
+    FORECAST_CACHE = _compute_forecast()
+    print(f"✅ Forecast cached for {len(FORECAST_CACHE)} districts. Server ready!")
+

@@ -52,3 +52,8 @@ export function predictNDVI(location) {
         body: JSON.stringify({ location }),
     });
 }
+
+/** GET /api/forecast — 3-month CNN-LSTM forecast for all districts */
+export function fetchForecast() {
+    return request("/api/forecast");
+}

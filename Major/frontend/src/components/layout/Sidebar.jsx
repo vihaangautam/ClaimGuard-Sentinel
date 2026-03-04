@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileSearch, Settings, Users, BarChart3, ChevronLeft, ChevronRight, Menu } from "lucide-react";
+import { LayoutDashboard, FileSearch, Settings, Users, BarChart3, ChevronLeft, ChevronRight, Menu, Activity } from "lucide-react";
 
 export function Sidebar({ activePage, setActivePage, isCollapsed, setIsCollapsed, claimCount = 0 }) {
   const navItems = [
     { id: 'dashboard', label: 'Situation Forecast', icon: LayoutDashboard },
     { id: 'investigation', label: 'Investigation Queue', icon: FileSearch, count: claimCount || undefined },
+    { id: 'forecast', label: 'Readiness Forecast', icon: Activity },
     { id: 'analytics', label: 'Cluster Analytics', icon: BarChart3 },
     { id: 'team', label: 'Field Agents', icon: Users },
     { id: 'settings', label: 'System Settings', icon: Settings },

@@ -4,12 +4,13 @@ import { RiskMap } from "@/components/dashboard/RiskMap"
 import { StatsWidget } from "@/components/dashboard/StatsWidget"
 import { LiveAlerts } from "@/components/dashboard/LiveAlerts"
 import { InvestigationView } from "@/components/dashboard/InvestigationView"
+import { ForecastView } from "@/components/dashboard/ForecastView"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Toaster, toast } from 'sonner'
 import { fetchDistricts, fetchAlerts } from "@/lib/api"
 
 function App() {
-  const [simulatedDate, setSimulatedDate] = useState("2024-01-12")
+  const [simulatedDate, setSimulatedDate] = useState("2026-02-01")
   const [activePage, setActivePage] = useState('dashboard')
   const [selectedClaimIndex, setSelectedClaimIndex] = useState(0)
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -141,7 +142,13 @@ function App() {
             </div>
           )}
 
-          {!loading && (activePage !== 'dashboard' && activePage !== 'investigation') && (
+          {!loading && activePage === 'forecast' && (
+            <div className="w-full h-full animate-in fade-in duration-300">
+              <ForecastView />
+            </div>
+          )}
+
+          {!loading && !['dashboard', 'investigation', 'forecast'].includes(activePage) && (
             <div className="h-full flex items-center justify-center text-muted-foreground flex-col gap-2">
               <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
                 🚧
