@@ -5,6 +5,7 @@ import { StatsWidget } from "@/components/dashboard/StatsWidget"
 import { LiveAlerts } from "@/components/dashboard/LiveAlerts"
 import { InvestigationView } from "@/components/dashboard/InvestigationView"
 import { ForecastView } from "@/components/dashboard/ForecastView"
+import { ClusterView } from "@/components/dashboard/ClusterView"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Toaster, toast } from 'sonner'
 import { fetchDistricts, fetchAlerts } from "@/lib/api"
@@ -148,7 +149,13 @@ function App() {
             </div>
           )}
 
-          {!loading && !['dashboard', 'investigation', 'forecast'].includes(activePage) && (
+          {!loading && activePage === 'analytics' && (
+            <div className="w-full h-full animate-in fade-in duration-300">
+              <ClusterView />
+            </div>
+          )}
+
+          {!loading && !['dashboard', 'investigation', 'forecast', 'analytics'].includes(activePage) && (
             <div className="h-full flex items-center justify-center text-muted-foreground flex-col gap-2">
               <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
                 🚧

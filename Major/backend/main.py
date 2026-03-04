@@ -452,16 +452,126 @@ def get_forecast():
 
 
 # ---------------------------------------------------------------------------
-# Startup event — preload model + compute forecast cache
+# Cluster Analytics — K-means on district drought features
+# ---------------------------------------------------------------------------
+CLUSTER_CACHE = {}
+
+def _compute_clusters(n_clusters=3):
+    """K-means clustering on district-level NDVI/SMI/rainfall profiles."""
+    from sklearn.cluster import KMeans
+    from sklearn.preprocessing import StandardScaler
+
+    # Build feature matrix: each district → [avg NDVI, avg SMI, avg rainfall, std NDVI, latest NDVI]
+    districts = []
+    features = []
+    for loc in df["Location"].unique():
+        geo = df[df["Location"] == loc]
+        agg = geo.groupby("Date").agg({
+            "NDVI": "mean", "SMI": "mean", "Avg_rainfall": "mean",
+        }).reset_index().sort_values("Date")
+
+        avg_ndvi = float(agg["NDVI"].mean())
+        avg_smi = float(agg["SMI"].mean())
+        avg_rain = float(agg["Avg_rainfall"].mean())
+        std_ndvi = float(agg["NDVI"].std())
+        latest_ndvi = float(agg["NDVI"].iloc[-1])
+        latest_smi = float(agg["SMI"].iloc[-1])
+        latest_rain = float(agg["Avg_rainfall"].iloc[-1])
+        ndvi_trend = float(agg["NDVI"].iloc[-1] - agg["NDVI"].iloc[-6]) if len(agg) >= 6 else 0.0
+
+        coords = DISTRICT_COORDS.get(loc, {"lat": 14.0, "lng": 77.0, "state": "Unknown"})
+        districts.append({
+            "name": loc,
+            "state": coords["state"],
+            "lat": coords["lat"],
+            "lng": coords["lng"],
+            "avg_ndvi": round(avg_ndvi, 4),
+            "avg_smi": round(avg_smi, 4),
+            "avg_rainfall": round(avg_rain, 4),
+            "std_ndvi": round(std_ndvi, 4),
+            "latest_ndvi": round(latest_ndvi, 4),
+            "latest_smi": round(latest_smi, 4),
+            "latest_rainfall": round(latest_rain, 4),
+            "ndvi_trend": round(ndvi_trend, 4),
+        })
+        features.append([avg_ndvi, avg_smi, avg_rain, std_ndvi, latest_ndvi, ndvi_trend])
+
+    # Standardize and cluster
+    X = np.array(features)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    labels = kmeans.fit_predict(X_scaled)
+
+    # Build cluster summaries
+    cluster_map = {}
+    for i, d in enumerate(districts):
+        d["cluster"] = int(labels[i])
+        cid = int(labels[i])
+        if cid not in cluster_map:
+            cluster_map[cid] = {"members": [], "features": []}
+        cluster_map[cid]["members"].append(d)
+        cluster_map[cid]["features"].append(features[i])
+
+    # Name clusters by rank (sorted by avg NDVI ascending → worst first)
+    ranked = sorted(cluster_map.items(), key=lambda kv: np.mean(np.array(kv[1]["features"])[:, 0]))
+    rank_labels = [
+        ("Severe Drought Zone", "#ef4444"),
+        ("Moderate Risk Zone", "#f59e0b"),
+        ("Resilient Zone", "#10b981"),
+    ]
+
+    cluster_summaries = []
+    for rank, (cid, data) in enumerate(ranked):
+        feat_arr = np.array(data["features"])
+        avg_ndvi = float(feat_arr[:, 0].mean())
+        avg_smi = float(feat_arr[:, 1].mean())
+        avg_rain = float(feat_arr[:, 2].mean())
+
+        label, color = rank_labels[min(rank, len(rank_labels) - 1)]
+
+        cluster_summaries.append({
+            "id": cid,
+            "label": label,
+            "color": color,
+            "avg_ndvi": round(avg_ndvi, 4),
+            "avg_smi": round(avg_smi, 4),
+            "avg_rainfall": round(avg_rain, 4),
+            "members": data["members"],
+            "size": len(data["members"]),
+        })
+
+
+    return {
+        "clusters": cluster_summaries,
+        "districts": districts,
+        "n_clusters": n_clusters,
+        "feature_names": ["avg_ndvi", "avg_smi", "avg_rainfall", "std_ndvi", "latest_ndvi", "ndvi_trend"],
+    }
+
+
+@app.get("/api/clusters")
+def get_clusters():
+    """Return cached K-means cluster analysis."""
+    return CLUSTER_CACHE
+
+
+# ---------------------------------------------------------------------------
+# Startup event — preload model + compute forecast + compute clusters
 # ---------------------------------------------------------------------------
 @app.on_event("startup")
 async def startup():
-    global FORECAST_CACHE
+    global FORECAST_CACHE, CLUSTER_CACHE
     print("🚀 ClaimGuard Sentinel API starting...")
     print(f"📊 Loaded {len(df)} data records across {df['Location'].nunique()} districts")
     print(f"📈 Date range: {df['Date'].min().strftime('%Y-%m-%d')} to {df['Date'].max().strftime('%Y-%m-%d')}")
     _load_model()
     print("🔮 Computing 3-month forecast for all districts...")
     FORECAST_CACHE = _compute_forecast()
-    print(f"✅ Forecast cached for {len(FORECAST_CACHE)} districts. Server ready!")
+    print(f"✅ Forecast cached for {len(FORECAST_CACHE)} districts.")
+    print("📊 Running K-means cluster analysis...")
+    CLUSTER_CACHE = _compute_clusters()
+    print(f"✅ Clusters computed: {len(CLUSTER_CACHE['clusters'])} clusters. Server ready!")
+
 
