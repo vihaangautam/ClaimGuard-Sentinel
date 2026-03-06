@@ -22,14 +22,16 @@ async function request(path, options = {}) {
     }
 }
 
-/** GET /api/districts — all 13 districts with latest NDVI, risk, etc. */
-export function fetchDistricts() {
-    return request("/api/districts");
+/** GET /api/districts — all 13 districts (optionally filtered by date) */
+export function fetchDistricts(date) {
+    const params = date ? `?date=${date}` : "";
+    return request(`/api/districts${params}`);
 }
 
-/** GET /api/alerts — drought alerts derived from real data */
-export function fetchAlerts() {
-    return request("/api/alerts");
+/** GET /api/alerts — drought alerts (optionally filtered by date) */
+export function fetchAlerts(date) {
+    const params = date ? `?date=${date}` : "";
+    return request(`/api/alerts${params}`);
 }
 
 /** GET /api/district/:name/history — NDVI time series for charts */

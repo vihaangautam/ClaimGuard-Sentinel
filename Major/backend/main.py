@@ -134,20 +134,129 @@ def root():
 
 
 @app.get("/api/districts")
-def get_districts():
-    """Return summary data for all monitored districts."""
-    return DISTRICT_SUMMARY
+def get_districts(date: str = None):
+    """
+    Return summary data for all monitored districts.
+    If ?date=YYYY-MM-DD is given, return data for that month.
+    For future months, use forecast predictions.
+    """
+    if not date:
+        return DISTRICT_SUMMARY
+
+    from datetime import datetime as dt
+    try:
+        target = pd.Timestamp(date)
+    except Exception:
+        return DISTRICT_SUMMARY
+
+    # Determine the latest real date in the dataset
+    latest_real = df["Date"].max()
+
+    # If target is in the future (beyond real data), use forecast
+    if target > latest_real:
+        return _get_forecast_districts(target)
+
+    # Historical: find the closest month in the data
+    target_period = target.to_period("M")
+    rows = []
+    for loc in df["Location"].unique():
+        loc_data = df[df["Location"] == loc]
+        # Find data for the target month
+        month_data = loc_data[loc_data["Date"].dt.to_period("M") == target_period]
+        if month_data.empty:
+            # Fall back to nearest earlier date
+            earlier = loc_data[loc_data["Date"] <= target]
+            if earlier.empty:
+                continue
+            month_data = earlier[earlier["Date"] == earlier["Date"].max()]
+
+        avg_ndvi = float(month_data["NDVI"].mean())
+        avg_smi  = float(month_data["SMI"].mean())
+        avg_rain = float(month_data["Avg_rainfall"].mean())
+        risk = round(max(0.0, min(1.0, 1.0 - avg_ndvi)), 4)
+        coords = DISTRICT_COORDS.get(loc, {"lat": 14.0, "lng": 77.0, "state": "Unknown"})
+
+        if risk > 0.7:
+            status = "High Risk"
+        elif risk > 0.5:
+            status = "Warning"
+        else:
+            status = "Safe"
+
+        rows.append({
+            "name": loc,
+            "lat": coords["lat"],
+            "lng": coords["lng"],
+            "state": coords["state"],
+            "ndvi": round(avg_ndvi, 4),
+            "smi": round(avg_smi, 4),
+            "rainfall": round(avg_rain, 4),
+            "risk": risk,
+            "status": status,
+            "latest_date": month_data["Date"].max().strftime("%Y-%m-%d"),
+        })
+    rows.sort(key=lambda r: r["risk"], reverse=True)
+    return rows
+
+
+def _get_forecast_districts(target_date):
+    """Build district summary from forecast cache for future months."""
+    target_period = target_date.strftime("%Y-%m")
+    rows = []
+    for fc in FORECAST_CACHE:
+        # Find the prediction for the target month
+        pred = None
+        for p in fc.get("predictions", []):
+            if p["month"] == target_period:
+                pred = p
+                break
+        if pred is None:
+            # Target month is beyond our 3-month forecast — use last prediction
+            if fc.get("predictions"):
+                pred = fc["predictions"][-1]
+            else:
+                continue
+
+        ndvi = pred["ndvi"]
+        risk_val = pred["risk"]  # already 0-1 in forecast cache
+        coords = DISTRICT_COORDS.get(fc["name"], {"lat": 14.0, "lng": 77.0, "state": "Unknown"})
+
+        if risk_val > 0.7:
+            status = "High Risk"
+        elif risk_val > 0.5:
+            status = "Warning"
+        else:
+            status = "Safe"
+
+        rows.append({
+            "name": fc["name"],
+            "lat": coords["lat"],
+            "lng": coords["lng"],
+            "state": coords.get("state", fc.get("state", "Unknown")),
+            "ndvi": round(ndvi, 4),
+            "smi": round(fc.get("current_smi", 0.3), 4),
+            "rainfall": round(fc.get("current_rainfall", 0.2), 4),
+            "risk": round(risk_val, 4),
+            "status": status,
+            "latest_date": target_date.strftime("%Y-%m-%d"),
+            "is_forecast": True,
+        })
+    rows.sort(key=lambda r: r["risk"], reverse=True)
+    return rows
 
 
 @app.get("/api/alerts")
-def get_alerts():
+def get_alerts(date: str = None):
     """
     Generate drought alerts from the data.
-    An alert is raised for any district whose latest NDVI is below the drought threshold.
+    If ?date is given, generate alerts for that specific date's data.
     """
+    # Get district data for the requested date
+    district_data = get_districts(date)
+
     alerts = []
     alert_id = 1
-    for d in DISTRICT_SUMMARY:
+    for d in district_data:
         if d["ndvi"] < 0.3:
             # Risk > 70% — matches map red zone
             alerts.append({

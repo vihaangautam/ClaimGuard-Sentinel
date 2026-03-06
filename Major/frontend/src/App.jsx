@@ -38,15 +38,15 @@ function App() {
       rainfall: d.rainfall,
     }))
 
-  // Fetch real data from backend
+  // Fetch data from backend — re-fetch when date changes
   useEffect(() => {
     async function loadData() {
       setLoading(true)
       setApiError(null)
       try {
         const [districtData, alertData] = await Promise.all([
-          fetchDistricts(),
-          fetchAlerts(),
+          fetchDistricts(simulatedDate),
+          fetchAlerts(simulatedDate),
         ])
         setDistricts(districtData)
         setAlerts(alertData)
@@ -61,7 +61,7 @@ function App() {
       }
     }
     loadData()
-  }, [])
+  }, [simulatedDate])
 
   // Navigation Logic
   const handleNextClaim = () => {
