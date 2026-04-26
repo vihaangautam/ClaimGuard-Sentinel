@@ -7,10 +7,12 @@ import { InvestigationView } from "@/components/dashboard/InvestigationView"
 import { ForecastView } from "@/components/dashboard/ForecastView"
 import { ClusterView } from "@/components/dashboard/ClusterView"
 import { Sidebar } from "@/components/layout/Sidebar"
+import LandingPage from "@/components/layout/LandingPage"
 import { Toaster, toast } from 'sonner'
 import { fetchDistricts, fetchAlerts } from "@/lib/api"
 
 function App() {
+  const [showLandingPage, setShowLandingPage] = useState(true)
   const [simulatedDate, setSimulatedDate] = useState("2026-02-01")
   const [activePage, setActivePage] = useState('dashboard')
   const [selectedClaimIndex, setSelectedClaimIndex] = useState(0)
@@ -91,6 +93,10 @@ function App() {
   }
 
   const currentClaim = claimQueue[selectedClaimIndex] || null
+
+  if (showLandingPage) {
+    return <LandingPage onExplore={() => setShowLandingPage(false)} />
+  }
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">
